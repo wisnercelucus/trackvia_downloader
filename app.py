@@ -1,6 +1,6 @@
 from flask import Flask, request
 from selenium import webdriver
-from selenium.webdriver.common.service import Service
+from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 
@@ -13,15 +13,22 @@ def download_selenium():
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    driver = webdriver.Chrome(service=Service(ChromeDriverManager.install()), options=chrome_options)
-    driver.get("https://google.com")
-    title = driver.title
-    language = driver.find_element(By.XPATH, "//div[id='SIvCob']").text
-    data = {"page_title": title, "language": language}
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=chrome_options)
+    try:
+        driver.get("https://google.com")
+        title = driver.title
+        try:
+            language = driver.find_element(By.XPATH, "//div[@id='SIvCob']").text
+        except Exception:
+            language = "Language element not found"
+        data = {"page_title": title, "language": language}
+    finally:
+        driver.quit()
     return data
 
 
-@app.route('/', methods=['GER', 'POST'])
+@app.route('/', methods=['GET', 'POST'])
 def home():
     if (request.method == 'GET'):
         return download_selenium()
