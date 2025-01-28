@@ -4,25 +4,29 @@ ARG PORT=443
 # Use the Cypress browsers image as the base
 FROM cypress/browsers:latest
 
-# Install Python 3 and required tools
+# Install Python and required tools
 RUN apt-get update && \
-    apt-get install -y python3 python3-pip && \
+    apt-get install -y python3 python3-pip python3-venv && \
     apt-get clean
 
-# Set environment variables for Python packages
-ENV PATH=/root/.local/bin:${PATH}
+# Set environment variables
+ENV VIRTUAL_ENV=/app/venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
-# Copy the requirements file to the container
+# Create a virtual environment
+RUN python3 -m venv $VIRTUAL_ENV
+
+# Copy the requirements file
 COPY requirements.txt /app/requirements.txt
 
 # Set the working directory
 WORKDIR /app
 
-# Install Python dependencies
-RUN pip3 install --no-cache-dir -r requirements.txt
+# Install dependencies in the virtual environment
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy all project files to the container
+# Copy all project files
 COPY . /app
 
-# Set the default command to run the application
+# Expose the port and run the app
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "${PORT}"]
