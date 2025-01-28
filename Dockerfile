@@ -12,6 +12,7 @@ RUN apt-get update && \
 # Set environment variables for the virtual environment
 ENV VIRTUAL_ENV=/app/venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+ENV PORT=${PORT}
 
 # Create a virtual environment
 RUN python3 -m venv $VIRTUAL_ENV
@@ -28,6 +29,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy all project files
 COPY . /app
 
-# Expose the port and set the default command
+# Expose the port
 EXPOSE $PORT
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "${PORT}"]
+
+# Use sh -c to substitute environment variables
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT}"]
