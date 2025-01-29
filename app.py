@@ -1,3 +1,4 @@
+import tempfile
 from flask import Flask, request
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -8,11 +9,14 @@ from selenium.webdriver.support import expected_conditions as EC
 app = Flask(__name__)
 
 def download_selenium():
+    # Create a unique temporary directory for this session
+    temp_user_data_dir = tempfile.TemporaryDirectory()
+
     chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--lang=en-US")
-    chrome_options.add_argument("accept-language=en-US,en;q=0.9")
+    chrome_options.add_argument(f"--user-data-dir={temp_user_data_dir.name}")  # Unique user data dir
     chrome_options.binary_location = "/usr/bin/chromium"
 
     service = Service("/usr/bin/chromedriver")
@@ -21,16 +25,10 @@ def download_selenium():
     try:
         driver.get("https://google.com")
         title = driver.title
-
         try:
-            # Debugging: Save page source to check if the element exists
-            page_source = driver.page_source
-            with open("debug_source.html", "w", encoding="utf-8") as f:
-                f.write(page_source)
-
-            # Wait for the element
+            # Wait for the language element
             language = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, "//*[contains(@id, 'SIvCob')]"))
+                EC.presence_of_element_located((By.ID, "SIvCob"))
             ).text
         except Exception as e:
             language = f"Language element not found: {e}"
@@ -38,6 +36,7 @@ def download_selenium():
         data = {"page_title": title, "language": language}
     finally:
         driver.quit()
+        temp_user_data_dir.cleanup()  # Clean up the temporary directory
     
     return data
 
