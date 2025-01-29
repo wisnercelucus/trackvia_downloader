@@ -9,26 +9,33 @@ from selenium.webdriver.support import expected_conditions as EC
 app = Flask(__name__)
 
 def download_selenium():
-    # Create a unique temporary directory for this session
     temp_user_data_dir = tempfile.TemporaryDirectory()
 
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument(f"--user-data-dir={temp_user_data_dir.name}")  # Unique user data dir
+    chrome_options.add_argument(f"--user-data-dir={temp_user_data_dir.name}")
+    chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.5481.104 Safari/537.36")
     chrome_options.binary_location = "/usr/bin/chromium"
 
     service = Service("/usr/bin/chromedriver")
     driver = webdriver.Chrome(service=service, options=chrome_options)
 
     try:
-        driver.get("https://google.com")
+        driver.get("https://www.google.com/?hl=en")  # Force English Google
+
         title = driver.title
+
         try:
-            # Wait for the language element
-            language = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.ID, "SIvCob"))
+            # Debug: Save page source and screenshot
+            with open("debug_source.html", "w", encoding="utf-8") as f:
+                f.write(driver.page_source)
+            driver.save_screenshot("debug_screenshot.png")
+
+            # Wait for the element to be visible
+            language = WebDriverWait(driver, 15).until(
+                EC.visibility_of_element_located((By.XPATH, "//div[@id='SIvCob']"))
             ).text
         except Exception as e:
             language = f"Language element not found: {e}"
@@ -36,7 +43,7 @@ def download_selenium():
         data = {"page_title": title, "language": language}
     finally:
         driver.quit()
-        temp_user_data_dir.cleanup()  # Clean up the temporary directory
+        temp_user_data_dir.cleanup()
     
     return data
 
